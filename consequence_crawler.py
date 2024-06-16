@@ -1,6 +1,6 @@
 import stock_hist_em as hist_em
-import numpy as np
 import pymysql
+from datetime import timedelta
 
 # 数据库连接配置
 config = {
@@ -8,7 +8,7 @@ config = {
     "port": 3306,
     "user": "root",
     "passwd": "123456",
-    "db": "financial_analysis_for_listed_companies",
+    "db": "falc_pro",
     "charset": "utf8mb4",
 }
 
@@ -21,12 +21,13 @@ try:
 
     # 创建游标
     with connection.cursor() as cursor:
-        # 构建SQL查询语句，选取感兴趣的字段
-        select_query = f"SELECT {', '.join(fields_of_interest)} FROM revenue_data;"
+        # 构建SQL查询语句，使用DISTINCT去除重复行，选取感兴趣的字段
+        select_query = (
+            f"SELECT DISTINCT {', '.join(fields_of_interest)} FROM financial_data;"
+        )
 
         # 执行查询
         cursor.execute(select_query)
-
         # 获取所有数据
         results = cursor.fetchall()
 
@@ -37,8 +38,6 @@ finally:
     # 关闭连接
     if connection:
         connection.close()
-
-print(data_list)
 
 
 def sava_data_to_database(date_table):
@@ -64,12 +63,12 @@ def sava_data_to_database(date_table):
 
     """ 将数据写入数据库 """
     print("开始向数据库写入数据...")
-    table_name = "consequence_db"
+    table_name = "consequence_data"
     fileds = "公司代码, 日期, 值"
     field_values = r"%s, %s, %s"
 
     cursor.executemany(
-        f"INSERT INTO { table_name }({ fileds }) VALUES ({ field_values })",
+        f"INSERT INTO { table_name }({ fileds }) VALUES ({ field_values }) ON DUPLICATE KEY UPDATE 值 = VALUES(值)",
         date_table,
     )
 
@@ -82,13 +81,59 @@ def sava_data_to_database(date_table):
     return
 
 
-df = hist_em.stock_zh_a_hist(
-    "000001",
-    "daily",
-    "20210229",
-    "20220229",
-)
-# 假设你的数据存储在df中
-data = df.values
+corporation = ""
+consequence_list = []
+for item in data_list:
+    if corporation != item[0]:
+        if corporation != "":
+            sava_data_to_database(consequence_list)
+            consequence_list = []
+            print(corporation + "保存成功！")
+        corporation = item[0]
+    date = item[1]
+    formatted_date = item[1].strftime("%Y%m%d")
+    try:
+        df = hist_em.stock_zh_a_hist(
+            item[0],
+            "daily",
+            formatted_date,
+            formatted_date,
+        )
+    except:
+        continue
+    if df.empty:
+        date2 = date + timedelta(days=60)
+        formatted_date2 = date2.strftime("%Y%m%d")
+        try:
+            df2 = hist_em.stock_zh_a_hist(
+                item[0],
+                "daily",
+                formatted_date,
+                formatted_date2,
+            )
+        except:
+            continue
+        if df2.empty:
+            continue
+    bl = False
+    while df.empty:
+        date += timedelta(days=1)
+        formatted_date = date.strftime("%Y%m%d")
+        try:
+            df = hist_em.stock_zh_a_hist(
+                item[0],
+                "daily",
+                formatted_date,
+                formatted_date,
+            )
+        except:
+            bl = True
+            break
+    if bl:
+        continue
+    consequence_list.append((item[0], item[1], df["开盘"][0]))
 
-print(df)
+sava_data_to_database(consequence_list)
+consequence_list = []
+print(corporation + "保存成功！")
+print("数据保存成功！")
