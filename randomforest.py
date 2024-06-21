@@ -3,15 +3,15 @@ from sklearn.ensemble import RandomForestRegressor
 from joblib import dump
 
 
-def main(x, y):
+def main(num, x, y):
 
     x = np.array(x)  # 转换为NumPy数组
     y = np.array(y)  # 转换为NumPy数组
     rf_regressor = RandomForestRegressor(
-        n_estimators=500, random_state=42
-    )  # 例如，设置为500棵树
+        n_estimators=250, random_state=42
+    )  # 例如，设置为250棵树
     rf_regressor.fit(x, y)
-    dump(rf_regressor, "random_forest_model.joblib")
+    dump(rf_regressor, "models/" + num + ".joblib")
 
 
 if __name__ == "__main__":

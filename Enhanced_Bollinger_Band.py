@@ -4,11 +4,6 @@ from datetime import datetime
 from backtrader.feeds import GenericCSVData
 import numpy as np
 
-# 假设您已经训练了一个随机森林模型，可以预测下一个时间点的WMA值
-# model = RandomForestRegressor(...)
-# X_train, y_train = ... # 训练数据
-# model.fit(X_train, y_train)
-
 
 class MyCSVData(GenericCSVData):
     # 定义列名映射到Backtrader字段
@@ -25,20 +20,20 @@ class MyCSVData(GenericCSVData):
     )
 
 
-def main(predictions, date1, date2):
+def main(predictions, date1, date2, leverage_factor=2):
 
     def predict_wma(t):
         return predictions[t]  # 返回预测的WMA值
 
     # 自定义策略
     class MyStrategy(bt.Strategy):
-        params = (("atr_multiplier", 3),)
+        params = (("atr_multiplier", 3), ("leverage_factor", leverage_factor))
 
         def __init__(self):
             self.sma20 = bt.indicators.SimpleMovingAverage(self.data.close, period=20)
             self.stddev20 = bt.indicators.StandardDeviation(self.data.close, period=20)
-            self.upper_track = self.sma20 + 3 * self.stddev20  # 布林带上轨
-            self.lower_track = self.sma20 - 3 * self.stddev20  # 布林带下轨
+            self.upper_track = self.sma20 + 2 * self.stddev20  # 布林带上轨
+            self.lower_track = self.sma20 - 2 * self.stddev20  # 布林带下轨
             self.atr = bt.indicators.ATR(period=20)
             self.buy_price = None
             self.position_type = None  # 用于记录仓位类型：None, 'long', 'short'
@@ -47,36 +42,28 @@ def main(predictions, date1, date2):
             current_index = len(self.data) - 1
             predicted_wma = predict_wma(current_index)
             atr_value = self.params.atr_multiplier * self.atr[0]
+            leverage = (
+                self.broker.getcash() * self.params.leverage_factor / self.data.close[0]
+            )  # 计算可利用杠杆
+
+            # 动态调整买入的大小，但需确保不超过可用资金
+            size = min(int(leverage), self.broker.getcash() // self.data.close[0])
 
             # 检查是否需要开仓
             if not self.position:
                 if predicted_wma <= self.lower_track[0]:
                     self.buy_price = self.data.close[0]  # 初始化buy_price
-                    self.buy(size=100)
+                    self.buy(size=size)
                     self.position_type = "long"
-                elif predicted_wma >= self.upper_track[0]:
-                    self.buy_price = self.data.close[0]  # 初始化buy_price
-                    self.sell(size=100)  # 卖空同等数量
-                    self.position_type = "short"
 
             # 检查是否需要平仓，增加对None的检查
             if self.position_type == "long":
                 if (
                     self.buy_price is None
-                    or predicted_wma < self.buy_price - atr_value
+                    or predicted_wma < self.buy_price - 3 * atr_value
                     or predicted_wma >= self.upper_track[0]
                 ):
                     self.sell(size=self.position.size)
-                    self.position_type = None
-                    self.buy_price = None  # 平仓后重置buy_price
-
-            elif self.position_type == "short":
-                if (
-                    self.buy_price is None
-                    or predicted_wma > self.buy_price + atr_value
-                    or predicted_wma <= self.lower_track[0]
-                ):
-                    self.buy(size=self.position.size)  # 平仓买入同等数量
                     self.position_type = None
                     self.buy_price = None  # 平仓后重置buy_price
 
@@ -124,6 +111,8 @@ def main(predictions, date1, date2):
     print(f"Final Portfolio Value: {end_cash:.2f}")
     print(f"Total Return Percentage: {total_return_percentage:.2f}%")
     print(f"Average Annualized Return Percentage: {annualized_return_percentage:.2f}%")
+
+    return annualized_return_percentage
 
 
 if __name__ == "__main__":
