@@ -241,6 +241,8 @@ cnt = 0
 for item in data_list:
     if item[0] not in corporations_info:
         continue
+    if item[0] not in issues_info:
+        continue
     if item[0] != corporation:
         corporation_info = corporations_info[item[0]]
         corporation_info += issues_info[item[0]]
@@ -264,13 +266,11 @@ for item in data_list:
     fet = fetch_finance_data(item[0], date_obj)
     if len(fet) < len(index_list):
         continue
-    ix = corporation_info + fet
+    ix = corporation_info + fet + [item2[2]]
     X.append(ix)
     y.append(iy)
     cnt += 1
     print(str(cnt / len(data_list) * 100) + "% 已完成 收入了" + str(len(y)) + "条信息")
-
-print(len(y))
 
 # 存储 X
 with open("X.csv", "w", newline="", encoding="utf-8") as file:

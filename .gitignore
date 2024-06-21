@@ -2,4 +2,6 @@
 __pycache__/
 
 # 忽略根目录下的data.csv文件
-data.csv
+*.csv
+
+*.joblib
