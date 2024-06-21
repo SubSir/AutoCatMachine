@@ -3,6 +3,7 @@ import stock_hist_em as hist_em
 from joblib import load
 from datetime import datetime
 import numpy as np
+import csv
 
 
 def main(long={}):
@@ -10,6 +11,11 @@ def main(long={}):
     items = os.listdir("models")
     for item in items:
         stock_list.append(item.split(".")[0])
+    past_behavior = {}
+    with open("benefit.csv", "r", newline="") as csvfile:
+        csvreader = csv.reader(csvfile)
+        for row in csvreader:
+            past_behavior[row[0]] = float(row[1])
     for stock in stock_list:
         now = datetime.now()
         strdate = now.strftime("%Y%m%d")
@@ -69,7 +75,8 @@ def main(long={}):
         upper_track = sma20 + 2 * stddev20
         lower_track = sma20 - 2 * stddev20
         if prediction <= lower_track:
-            print(stock, "Buy")
+            print(stock, "Buy, Past Benefit:", past_behavior[stock])
+
         if stock in long:
             if prediction >= upper_track or prediction < long[stock] - 3 * atr:
                 print(stock, "Sell")

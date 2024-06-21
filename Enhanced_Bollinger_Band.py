@@ -112,6 +112,7 @@ def main(predictions, date1, date2, leverage_factor=2):
     print(f"Total Return Percentage: {total_return_percentage:.2f}%")
     print(f"Average Annualized Return Percentage: {annualized_return_percentage:.2f}%")
 
+    cerebro.plot()
     return annualized_return_percentage
 
 
