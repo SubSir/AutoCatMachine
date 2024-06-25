@@ -83,11 +83,15 @@ def main(long={}):
 
 
 if __name__ == "__main__":
-    input_num = input("输入持仓编号(输入0表示不持仓)")
+    input_num = input("输入持仓数量")
     if input_num == "0":
         main()
     else:
-        buy_price = input("输入持仓价格")
-        long = {}
-        long[input_num] = float(buy_price)
+        input_num = int(input_num)
+        while input_num > 0:
+            stock = input("输入持仓股票")
+            buy_price = input("输入持仓价格")
+            long = {}
+            long[stock] = float(buy_price)
+            input_num -= 1
         main(long)
