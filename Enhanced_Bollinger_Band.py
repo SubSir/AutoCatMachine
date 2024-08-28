@@ -5,17 +5,18 @@ from backtrader.feeds import GenericCSVData
 import numpy as np
 
 
+# 定义自定义数据类
 class MyCSVData(GenericCSVData):
     # 定义列名映射到Backtrader字段
-    lines = ("Open", "Close", "High", "Low", "Volume")
+    lines = ("datetime", "open", "close", "high", "low", "volume")
     params = (
         ("dtformat", "%Y-%m-%d"),  # 日期格式
-        ("Date", 0),  # 日期列索引
-        ("Open", 1),  # 开盘价列索引
-        ("Close", 2),  # 最高价列索引
-        ("High", 3),  # 最低价列索引
-        ("Low", 4),  # 收盘价列索引
-        ("Volume", 5),  # 成交量列索引
+        ("datetime", 0),  # 日期列索引
+        ("open", 1),  # 开盘价列索引
+        ("close", 2),  # 收盘价列索引
+        ("high", 3),  # 最高价列索引
+        ("low", 4),  # 最低价列索引
+        ("volume", 5),  # 成交量列索引
         ("openinterest", -1),  # 开仓兴趣列索引，如果不存在可以设置为-1
     )
 
