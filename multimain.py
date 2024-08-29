@@ -36,7 +36,8 @@ finally:
     # 关闭连接
     if connection:
         connection.close()
-
+with open("benefit.csv", "w", newline="") as csvfile:
+    pass
 for stock in stock_list:
     try:
         benefit = main.main(stock[0], "20120620", "20240620")
